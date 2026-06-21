@@ -64,15 +64,31 @@ npm run deploy     # ait deploy (앱인토스 콘솔 배포)
 
 브라우저에서 카메라 스캔은 **HTTPS 또는 localhost** 에서만 동작해요. 데스크톱에서는 카메라 대신 바코드 번호 직접 입력으로 테스트할 수 있어요.
 
-## 데이터 출처에 대해
+## 데이터 출처: 식약처(식품안전나라) API 연동
 
-현재 제품 데이터는 분석 로직 시연을 위한 **예시(시드) 값**(`src/data/products.ts`)이에요.
-실제 서비스에서는 `src/data/productRepository.ts` 의 `lookupByBarcode` 한 곳만 교체하면 돼요.
+바코드 조회는 **시드 DB → 식약처 API** 순서로 동작해요 (`src/data/productRepository.ts`).
 
-- **식품안전나라 식품영양성분DB** (식약처, 품목 C005) — 국내 가공식품 커버리지 우수, API 키 필요
-- **Open Food Facts** — 무료·키 불필요, 글로벌 데이터 (한국 커버리지는 보완 필요)
+```
+lookupByBarcode(barcode)
+  1) 로컬 시드 DB (오프라인·시연용)
+  2) 식약처 API  (src/data/mfds/)
+       · 바코드연계제품정보(C005): 바코드 → 제품명/제조사/식품유형
+       · 식품영양성분DB(I2790):   제품명 → 영양성분(열량·탄수·당류·단백·지방·나트륨…)
+       → mapToProduct() 로 Product 모델 변환
+```
 
-`productRepository.ts` 에 Open Food Facts 연동 예시가 주석으로 들어 있어요. 외부 API 호출은 앱인토스 환경의 네트워크 정책을 확인하세요.
+### 설정 방법
+
+1. [식품안전나라 OpenAPI](https://www.foodsafetykorea.go.kr/api/openApiInfo.do) 에서 인증키 발급
+2. `.env.example` 을 `.env` 로 복사하고 `VITE_MFDS_API_KEY` 입력
+3. 키가 없으면 연동은 자동으로 꺼지고 시드 데이터만 사용해요.
+
+### 알아둘 점
+
+- **CORS**: 식품안전나라 API는 교차출처 헤더를 주지 않아, 브라우저/WebView에서 직접 호출하면 막힐 수 있어요. 이럴 땐 프록시를 두고 `VITE_MFDS_BASE_URL` 로 그 주소를 지정하세요. (WebView 네트워크는 앱인토스 환경 정책도 함께 확인)
+- **필드명**: 식약처 서비스는 개정/버전마다 응답 필드명이 달라요. 매핑은 `src/data/mfds/mapper.ts` 의 `BARCODE_FIELDS` / `NUTRITION_FIELDS` 한 곳에 모아뒀으니, 구독한 서비스 응답에 맞게 그 상수만 고치면 돼요.
+- **빠지는 값**: 식약처 표준 항목에는 당알코올·카페인·원재료명이 없을 수 있어요. 가능한 값만 채우고, 감미료는 (원재료명이 없으면) 제품명에서 추정해요.
+- **Open Food Facts** 등 다른 소스를 붙이고 싶으면 `productRepository.ts` 에 같은 패턴으로 단계를 추가하면 돼요.
 
 ## 샘플 바코드 (시연용)
 

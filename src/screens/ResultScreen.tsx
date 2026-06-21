@@ -27,18 +27,19 @@ interface Props {
 export function ResultScreen({ barcode, profile, onBack, onScanAgain, onOpenProduct, onOpenProfile }: Props) {
   const [state, setState] = useState<'loading' | 'found' | 'not_found'>('loading');
   const [product, setProduct] = useState<Product | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let alive = true;
+    const controller = new AbortController();
     setState('loading');
-    lookupByBarcode(barcode).then((res) => {
-      if (!alive) return;
+    setError(null);
+    lookupByBarcode(barcode, controller.signal).then((res) => {
+      if (controller.signal.aborted) return;
       setProduct(res.product);
+      setError(res.error ?? null);
       setState(res.product ? 'found' : 'not_found');
     });
-    return () => {
-      alive = false;
-    };
+    return () => controller.abort();
   }, [barcode]);
 
   if (state === 'loading') {
@@ -55,12 +56,18 @@ export function ResultScreen({ barcode, profile, onBack, onScanAgain, onOpenProd
       <div>
         <AppHeader title="분석 결과" onBack={onBack} />
         <div style={{ padding: theme.space(6), textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: theme.space(3) }}>🔍</div>
-          <div style={{ fontWeight: 700, fontSize: 17, color: theme.color.text }}>등록되지 않은 바코드예요</div>
+          <div style={{ fontSize: 40, marginBottom: theme.space(3) }}>{error ? '⚠️' : '🔍'}</div>
+          <div style={{ fontWeight: 700, fontSize: 17, color: theme.color.text }}>
+            {error ? '조회 중 문제가 생겼어요' : '등록되지 않은 바코드예요'}
+          </div>
           <p style={{ color: theme.color.subtext, fontSize: 14, lineHeight: 1.6, marginTop: theme.space(2) }}>
-            바코드 <b>{barcode}</b> 에 해당하는 제품을 찾지 못했어요.
-            <br />
-            실제 서비스에서는 식약처·Open Food Facts 데이터와 연동돼요.
+            {error ? (
+              error
+            ) : (
+              <>
+                바코드 <b>{barcode}</b> 에 해당하는 제품을 식약처 DB·시드 데이터에서 찾지 못했어요.
+              </>
+            )}
           </p>
           <div style={{ marginTop: theme.space(5) }}>
             <PrimaryButton onClick={onScanAgain}>다시 스캔하기</PrimaryButton>

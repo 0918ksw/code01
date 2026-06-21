@@ -15,6 +15,7 @@ export type CautionTag =
   | 'pku' // 페닐케톤뇨증 주의 (아스파탐)
   | 'who_2b' // WHO 발암 가능 물질(2B) 분류 이력
   | 'aftertaste' // 특유의 뒷맛
+  | 'dog_toxic' // 반려견에게 독성 (자일리톨 등)
   | 'kids'; // 어린이 다량 섭취 주의
 
 export interface Sweetener {
@@ -26,8 +27,16 @@ export interface Sweetener {
   type: SweetenerType;
   /** 한 줄 요약 설명 */
   summary: string;
+  /** 조금 더 자세한 설명 (카드 펼침용) */
+  detail?: string;
   /** 혈당 영향: 0(거의 없음) ~ 3(설탕에 가까움) */
   bloodSugarImpact: 0 | 1 | 2 | 3;
+  /** 설탕 대비 단맛 배수 (예: 600 = 설탕의 600배) */
+  sweetness?: number;
+  /** 1g당 열량(kcal) */
+  kcalPerGram?: number;
+  /** 일일섭취허용량(ADI) 안내 문구 */
+  adi?: string;
   cautions: CautionTag[];
 }
 

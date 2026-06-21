@@ -1,9 +1,10 @@
 import type { Product } from '../domain/types';
 import { SEED_PRODUCTS } from './products';
+import { fetchProductByBarcode, isMfdsEnabled } from './mfds';
 
 // 바코드로 제품을 조회하는 단일 진입점이에요.
-// 지금은 시드 데이터에서 찾지만, 아래 fetchFromOpenFoodFacts 처럼
-// 실제 API 연동 함수로 교체하면 화면/분석 코드는 손대지 않아도 돼요.
+// 1) 로컬 시드 DB → 2) 식약처(식품안전나라) API 순서로 찾아요.
+// 데이터 출처가 바뀌어도 화면/분석 코드는 손대지 않아요.
 
 const BY_BARCODE = new Map(SEED_PRODUCTS.map((p) => [p.barcode, p]));
 
@@ -11,18 +12,32 @@ export interface LookupResult {
   product: Product | null;
   /** 데이터를 어디서 가져왔는지 */
   source: 'seed' | 'remote' | 'not_found';
+  /** 원격 조회 중 발생한 오류 메시지 (있으면) */
+  error?: string;
 }
 
 /** 바코드로 제품을 조회해요. */
-export async function lookupByBarcode(barcode: string): Promise<LookupResult> {
+export async function lookupByBarcode(barcode: string, signal?: AbortSignal): Promise<LookupResult> {
   const normalized = barcode.trim();
-  const product = BY_BARCODE.get(normalized);
-  if (product) {
-    return { product, source: 'seed' };
+
+  // 1) 로컬 시드 DB (오프라인·시연용)
+  const seeded = BY_BARCODE.get(normalized);
+  if (seeded) return { product: seeded, source: 'seed' };
+
+  // 2) 식약처 API (키가 설정된 경우에만)
+  if (isMfdsEnabled()) {
+    try {
+      const remote = await fetchProductByBarcode(normalized, signal);
+      if (remote) return { product: remote, source: 'remote' };
+    } catch (e) {
+      return {
+        product: null,
+        source: 'not_found',
+        error: e instanceof Error ? e.message : '식약처 조회에 실패했어요.',
+      };
+    }
   }
-  // TODO: 시드에 없으면 실제 API로 조회 (네트워크 권한/키 필요)
-  // const remote = await fetchFromOpenFoodFacts(normalized);
-  // if (remote) return { product: remote, source: 'remote' };
+
   return { product: null, source: 'not_found' };
 }
 
@@ -37,16 +52,3 @@ export function getProductsInCategory(category: string, excludeBarcode?: string)
 export function getAllProducts(): Product[] {
   return SEED_PRODUCTS;
 }
-
-/**
- * 실제 연동 예시 (참고용, 호출하지 않음).
- * Open Food Facts 는 무료이고 키가 필요 없지만 한국 제품 커버리지는 제한적이에요.
- * 식약처 식품영양성분 DB(C005)는 키가 필요하고 국내 가공식품 커버리지가 좋아요.
- */
-// async function fetchFromOpenFoodFacts(barcode: string): Promise<Product | null> {
-//   const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
-//   if (!res.ok) return null;
-//   const data = await res.json();
-//   if (data.status !== 1) return null;
-//   return mapOpenFoodFactsToProduct(data.product); // 매핑 함수는 별도 구현
-// }
