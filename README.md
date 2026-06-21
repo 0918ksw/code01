@@ -86,7 +86,7 @@ lookupByBarcode(barcode)
 ### 알아둘 점
 
 - **CORS**: 식품안전나라 API는 교차출처 헤더를 주지 않아, 브라우저/WebView에서 직접 호출하면 막힐 수 있어요. 이럴 땐 프록시를 두고 `VITE_MFDS_BASE_URL` 로 그 주소를 지정하세요. (WebView 네트워크는 앱인토스 환경 정책도 함께 확인)
-- **필드명**: 식약처 서비스는 개정/버전마다 응답 필드명이 달라요. 매핑은 `src/data/mfds/mapper.ts` 의 `BARCODE_FIELDS` / `NUTRITION_FIELDS` 한 곳에 모아뒀으니, 구독한 서비스 응답에 맞게 그 상수만 고치면 돼요.
+- **필드명**: 식약처 서비스는 개정/세대마다 응답 필드명이 달라요(레거시 `NUTR_CONT1~9` ↔ 신형 `enerc·chocdf·sugar·nat…`). 그래서 `src/data/mfds/mapper.ts` 의 `BARCODE_FIELDS` / `NUTRITION_FIELDS` 는 항목당 **후보 키 목록**을 두고 먼저 잡히는 값을 써요. 실제 응답에 맞춰 후보만 더하거나 빼면 되고, **요청 조건 파라미터 이름**(예: `BAR_CD`, `DESC_KOR`)은 `.env` 의 `VITE_MFDS_BARCODE_PARAM` / `VITE_MFDS_NUTRITION_PARAM` 로 바꿀 수 있어요.
 - **빠지는 값**: 식약처 표준 항목에는 당알코올·카페인·원재료명이 없을 수 있어요. 가능한 값만 채우고, 감미료는 (원재료명이 없으면) 제품명에서 추정해요.
 - **Open Food Facts** 등 다른 소스를 붙이고 싶으면 `productRepository.ts` 에 같은 패턴으로 단계를 추가하면 돼요.
 

@@ -1,7 +1,7 @@
 import type { Product } from '../../domain/types';
 import { callFoodSafetyApi } from './client';
 import { mfdsConfig } from './config';
-import { BARCODE_FIELDS, NUTRITION_FIELDS, mapToProduct } from './mapper';
+import { BARCODE_FIELDS, mapToProduct, pick } from './mapper';
 
 export { isMfdsEnabled } from './config';
 
@@ -21,19 +21,19 @@ export async function fetchProductByBarcode(
 ): Promise<Product | null> {
   const productRows = await callFoodSafetyApi(
     mfdsConfig.barcodeService,
-    { [BARCODE_FIELDS.barcode]: barcode },
+    { [mfdsConfig.barcodeParam]: barcode },
     { signal },
   );
   const productRow = productRows[0];
   if (!productRow) return null;
 
-  const name = productRow[BARCODE_FIELDS.name];
+  const name = pick(productRow, BARCODE_FIELDS.name);
   let nutritionRow = null;
   if (name) {
     try {
       const nutritionRows = await callFoodSafetyApi(
         mfdsConfig.nutritionService,
-        { [NUTRITION_FIELDS.name]: name },
+        { [mfdsConfig.nutritionNameParam]: name },
         { signal, end: 1 },
       );
       nutritionRow = nutritionRows[0] ?? null;

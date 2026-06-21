@@ -12,6 +12,10 @@ interface ImportMetaEnv {
   readonly VITE_MFDS_BARCODE_SERVICE?: string;
   /** 식품영양성분DB 서비스 ID (기본 I2790) */
   readonly VITE_MFDS_NUTRITION_SERVICE?: string;
+  /** 바코드 조회 요청 파라미터 이름 (기본 BAR_CD) */
+  readonly VITE_MFDS_BARCODE_PARAM?: string;
+  /** 영양성분 조회 요청 파라미터 이름 (기본 DESC_KOR) */
+  readonly VITE_MFDS_NUTRITION_PARAM?: string;
 }
 
 interface ImportMeta {

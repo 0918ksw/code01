@@ -15,6 +15,10 @@ export const mfdsConfig = {
   barcodeService: import.meta.env.VITE_MFDS_BARCODE_SERVICE ?? 'C005',
   // 제품명/보고번호 → 영양성분 (식품영양성분DB)
   nutritionService: import.meta.env.VITE_MFDS_NUTRITION_SERVICE ?? 'I2790',
+  // 조회 조건으로 보낼 요청 파라미터 이름 (서비스가 기대하는 키).
+  // 응답 파싱은 mapper의 후보 목록이 처리하지만, 요청 조건 키는 단일 값이라 따로 둬요.
+  barcodeParam: import.meta.env.VITE_MFDS_BARCODE_PARAM ?? 'BAR_CD',
+  nutritionNameParam: import.meta.env.VITE_MFDS_NUTRITION_PARAM ?? 'DESC_KOR',
 } as const;
 
 export function isMfdsEnabled(): boolean {
